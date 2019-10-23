@@ -24,7 +24,6 @@ async def subDomainBrute(current_target):
                 return [0, current_target, None]
             else:
                 ips.append(address)
-                return [1, current_target, ips]
         return [1, current_target, ips]
     except aiodns.error.DNSError:
         return [0, current_target, None]

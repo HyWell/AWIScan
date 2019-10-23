@@ -26,7 +26,7 @@ def TargetRegister(targets):
                 TARGETS.IP.append(ip)
                 target_result.append([1, ip, None])
             elif domain:
-                RESULT[domain] = {"subDomain": [], "status": ""}
+                RESULT[domain] = {"subDomain": {"open": [], "close": []}, "status": ""}
                 TARGETS.DOMAIN.append(domain)
                 target_result.append([2, domain, None])
                 for sub in CONF.dns_sub:

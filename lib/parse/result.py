@@ -29,18 +29,19 @@ def dirParse(base_url, url, result):
     return results
 
 
-def subDomainParse(base_domain, domain, result):
-    results = []
-    status = result[0]
-    if status == 1:
+def subDomainParse(base_domain, domain, results):
+    result = []
+    status = results[0]
+    if base_domain and status == 1:
+        RESULT[base_domain]["subDomain"]["open"].append([domain, results[2]])
         for sub in CONF.dns_sub:
-            results.append("%s.%s" % (sub, domain))
-    if base_domain:
-        RESULT[base_domain]["subDomain"].append(domain)
+            result.append("%s.%s" % (sub, domain))
+    elif base_domain and status != 1:
+        RESULT[base_domain]["subDomain"]["close"].append([domain, results[2]])
     else:
-        RESULT[domain]["status"] = "open" if base_domain is None else "close"
+        RESULT[domain]["status"] = "open" if status == 1 else "close"
         TARGETS.END.domain.append(base_domain)
-    return results
+    return result
 
 
 def portScanParse(ip, results):
