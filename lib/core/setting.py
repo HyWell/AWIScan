@@ -57,4 +57,6 @@ DNS_SUB_FILE = "data/subDomain/next_sub_full.txt"
 DNS_SUB_FULL_FILE = "data/subDomain/subnames_full.txt"
 
 DIR_FILE = "data/webScan/dict.txt"
+PROXY = False
+PROXIES = "data/webScan/proxy.txt"
 USER_AGENTS = "data/webScan/user-agents.txt"

@@ -19,7 +19,7 @@ from lib.controller.aioportscan import portScan
 from lib.controller.aiosubdomainscan import subDomainBrute
 from lib.core.data import logger
 from lib.core.options import TargetRegister
-from lib.core.setting import CONF, DIR_FILE, DNS_SERVERS, DNS_SUB_FILE, DNS_SUB_FULL_FILE, TARGETS
+from lib.core.setting import CONF, DIR_FILE, DNS_SERVERS, DNS_SUB_FILE, DNS_SUB_FULL_FILE, PROXIES, TARGETS, USER_AGENTS
 from lib.parse.result import resultParse, save
 
 
@@ -81,6 +81,13 @@ def webEngine():
     for dir in open(DIR_FILE).readlines():
         dir = dir.strip()
         CONF.dir.append(dir)
+    for user_agent in open(USER_AGENTS).readlines():
+        user_agent = user_agent.strip()
+        CONF.user_agents.append(user_agent)
+    if CONF.PROXY:
+        for proxy in open(PROXIES).readlines():
+            proxy = proxy.strip()
+            CONF.proxies.append(proxy)
     logger.info("[AWIScan] Dir loading completed. Total %d dir" % len(CONF.dir))
 
 

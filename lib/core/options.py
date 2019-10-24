@@ -10,7 +10,7 @@
 
 from lib.core.data import logger
 from lib.parse.ip import parseTarget
-from lib.core.setting import ASYNC_NUM, CONF, TARGETS, PROCESS_NUM, RESULT
+from lib.core.setting import ASYNC_NUM, CONF, TARGETS, PROCESS_NUM, PROXY, RESULT
 
 
 def TargetRegister(targets):
@@ -53,8 +53,11 @@ def InitRegister(level):
     CONF.dns_sub = []
     CONF.level = level
     CONF.levels = {"1": "", "2": "", "3": ""}
+    CONF.proxies = []
     CONF.process_num = PROCESS_NUM
     CONF.quiet = False
+    CONF.user_agents = []
+    CONF.PROXY = True if PROXY else False
     logger.info("[AWIScan] Configuration has been initialized")
     TARGETS.IP = []
     TARGETS.DOMAIN = []
