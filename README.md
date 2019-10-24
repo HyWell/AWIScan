@@ -46,6 +46,15 @@ Options arguments:
 
 - Fast Async
 - Support port scan、dir scan、subdomain scan
+  - Dir scan
+    - Random user-agent
+    - Support proxy(Default:Close)
+  - Subdomain scan
+    - Customize DNS Server 
+
+# Setting
+
+Most configurations are set by lib/core/settings
 
 # Tips
 
