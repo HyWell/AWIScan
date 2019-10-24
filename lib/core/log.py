@@ -22,7 +22,7 @@ LOGGER = logging.getLogger("AWIScanLog")
 
 LOGGER_HANDLER = None
 try:
-    from thiedparty.ansistrm.ansistrm import ColorizingStreamHandler
+    from lib.thirdparty.ansistrm.ansistrm import ColorizingStreamHandler
 
     disableColor = False
 

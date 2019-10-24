@@ -54,6 +54,7 @@ def InitRegister(level):
     CONF.level = level
     CONF.levels = {"1": "", "2": "", "3": ""}
     CONF.process_num = PROCESS_NUM
+    CONF.quiet = False
     logger.info("[AWIScan] Configuration has been initialized")
     TARGETS.IP = []
     TARGETS.DOMAIN = []
