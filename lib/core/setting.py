@@ -36,7 +36,7 @@ BANNER = re.sub(r"\[.\]", lambda _: "[\033[01;41m%s\033[01;49m]" % random.sample
 NMAP_CONF = {1: ["-T4 -F "],
              2: ["-T4 -A -v -Pn"],
              3: ["-p 1-65535 -T4 -A -v -sS -Pn"]}
-SUDO_PASSWORD = "082888"
+SUDO_PASSWORD = ""
 
 ASYNC_NUM = 100
 PROCESS_NUM = 10
