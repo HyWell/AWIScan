@@ -59,4 +59,5 @@ DNS_SUB_FULL_FILE = "data/subDomain/subnames_full.txt"
 DIR_FILE = "data/webScan/dict.txt"
 PROXY = False
 PROXIES = "data/webScan/proxy.txt"
+STATUS = []
 USER_AGENTS = "data/webScan/user-agents.txt"

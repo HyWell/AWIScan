@@ -18,30 +18,22 @@ def save():
         f.write(str(RESULT))
 
 
-def dirParse(base_url, url, result):
-    results = []
-    status = result[0]
-    if base_url:
-        RESULT[base_url]["dic"].append([url, status])
-    else:
-        RESULT[url]["status"] = status
-        TARGETS.END.url.append(base_url)
-    return results
-
-
-def subDomainParse(base_domain, domain, results):
+def dirParse(ip, current_target, base_url, results):
     result = []
     status = results[0]
-    if base_domain and status == 1:
-        RESULT[base_domain]["subDomain"]["open"].append([domain, results[2]])
-        for sub in CONF.dns_sub:
-            result.append("%s.%s" % (sub, domain))
-    elif base_domain and status != 1:
-        RESULT[base_domain]["subDomain"]["close"].append([domain, results[2]])
-    else:
-        RESULT[domain]["status"] = "open" if status == 1 else "close"
-        TARGETS.END.domain.append(base_domain)
+    RESULT[ip][base_url].append([current_target, status])
     return result
+
+
+def subDomainParse(ip, current_target, base_domain):
+    put_targets = []
+    if base_domain:
+        RESULT[ip][base_domain]["subDomain"].append(current_target)
+        for sub in CONF.dns_sub:
+            put_targets.append("%s.%s" % (sub, current_target))
+    else:
+        RESULT[ip][current_target]["status"] = "open"
+    return put_targets
 
 
 def portScanParse(ip, results):
@@ -49,36 +41,39 @@ def portScanParse(ip, results):
     result = results.hosts
     put_targets = []
     if result:
-        RESULT[ip]["status"] = "open"
         result = result[0]
         for service in result.services:
             if "http" in service.service or "https" in service.service:
                 put_targets.append(str(ip) + ":" + str(service.port))
             services[service.port] = [service.service, service.state]
         HostNames = result.hostnames[0] if result.hostnames else None
-        RESULT[ip]["nmap"] = {
-            "MAC": result.mac,
-            "HostNames": HostNames,
-            "services": services
-        }
+        RESULT[ip]["Status"] = "open"
+        RESULT[ip]["MAC"] = result.mac
+        RESULT[ip]["HostNames"] = HostNames
+        RESULT[ip]["services"] = services
     else:
         RESULT[ip]["status"] = "close"
-    TARGETS.END.ip.append(ip)
     return put_targets
 
 
 def resultParse(task_queue, target, results):
     put_targets = []
     flag = target[0]
-    current_target = target[1]
+    ip = target[1]
+    domain = target[2]
+    url = target[3]
+    current_target = target[4] if target[4] else target[2]
+
     if flag == 1:
         put_targets = portScanParse(current_target, results)
     elif flag == 2:
-        base_domain = target[2]
-        put_targets = subDomainParse(base_domain, current_target, results)
+        base_domain = domain if target[4] else None
+        current_target = current_target if current_target else domain
+        put_targets = subDomainParse(ip, current_target, base_domain)
     elif flag == 3:
-        base_url = target[2]
-        put_targets = dirParse(base_url, current_target, results)
+        base_url = url if target[4] else None
+        current_target = current_target if current_target else url
+        put_targets = dirParse(ip, current_target, base_url, results)
     if CONF.level == "not now":
         for put_target in put_targets:
             task_queue.put_nowait(put_target)

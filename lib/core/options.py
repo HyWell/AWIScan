@@ -10,7 +10,7 @@
 
 from lib.core.data import logger
 from lib.parse.ip import parseTarget
-from lib.core.setting import ASYNC_NUM, CONF, TARGETS, PROCESS_NUM, PROXY, RESULT
+from lib.core.setting import ASYNC_NUM, CONF, TARGETS, PROCESS_NUM, PROXY, RESULT, STATUS
 
 
 def TargetRegister(targets):
@@ -19,29 +19,63 @@ def TargetRegister(targets):
         parse_targets = parseTarget(target)
         for parse_target in parse_targets:
             ip = parse_target["ip"]
-            domain = parse_target["domain"]
-            url = parse_target["url"]
+            domain = parse_target["domain"] if parse_target["domain"] else "Domain Null"
+            url = parse_target["url"] if parse_target["url"] else "Url Null"
             if ip:
-                RESULT[ip] = {}
-                TARGETS.IP.append(ip)
-                target_result.append([1, ip, None])
-            elif domain:
-                RESULT[domain] = {"subDomain": {"open": [], "close": []}, "status": ""}
-                TARGETS.DOMAIN.append(domain)
-                target_result.append([2, domain, None])
-                for sub in CONF.dns_sub:
-                    target_result.append([2, "%s.%s" % (sub, domain), domain])
-            elif url:
-                RESULT[url] = {"dic": [], "status": ""}
-                TARGETS.URL.append(url)
-                target_result.append([3, url, None])
-                for dir in CONF.dir:
-                    if "/" in dir:
-                        target_result.append([3, url + dir, url])
-                    else:
-                        target_result.append([3, url + "/" + dir, url])
+                if ip not in RESULT:
+                    RESULT[ip] = {
+                        "Status": "",
+                        "MAC": "",
+                        "HostNames": "",
+                        "services": "",
+                        domain: {
+                            "status": "",
+                            "subDomain": []
+                        },
+                        url: []
+                    }
+                    TARGETS.IP.append(ip)
+                    target_result.append([1, ip, None, None, ip])
+                    if domain != "Domain Null":
+                        TARGETS.DOMAIN.append(domain)
+                        target_result.append([2, ip, domain, None, None])
+                        for sub in CONF.dns_sub:
+                            TARGETS.subDomain.append("%s.%s" % (sub, domain))
+                            target_result.append([2, ip, domain, None, "%s.%s" % (sub, domain)])
+                    if url != "Url Null":
+                        TARGETS.URL.append(url)
+                        target_result.append([3, ip, domain, url, url])
+                        for dir in CONF.dir:
+                            if "/" in dir:
+                                target_result.append([3, ip, domain, url, url + dir])
+                                TARGETS.URL.append(url + dir)
+                            else:
+                                target_result.append([3, ip, domain, url, url + "/" + dir])
+                                TARGETS.URL.append(url + "/" + dir)
+                else:
+                    if domain != "Domain Null" and domain not in RESULT[ip]:
+                        RESULT[ip][domain] = {
+                            "status": "",
+                            "subDomain": []
+                        }
+                        TARGETS.DOMAIN.append(domain)
+                        target_result.append([2, ip, domain, None, None])
+                        for sub in CONF.dns_sub:
+                            TARGETS.subDomain.append("%s.%s" % (sub, domain))
+                            target_result.append([2, ip, domain, None, "%s.%s" % (sub, domain)])
+                    if url != "Url Null" and url not in RESULT[ip]:
+                        RESULT[ip][url] = []
+                        TARGETS.URL.append(url)
+                        target_result.append([3, ip, domain, url, url])
+                        for dir in CONF.dir:
+                            if "/" in dir:
+                                target_result.append([3, ip, domain, url, url + dir])
+                                TARGETS.URL.append(url + dir)
+                            else:
+                                target_result.append([3, ip, domain, url, url + "/" + dir])
+                                TARGETS.URL.append(url + "/" + dir)
             else:
-                logger.info("%s is end" % domain if domain else ip)
+                logger.warning("[AWIScan] %s is error" % target)
     return target_result
 
 
@@ -52,15 +86,16 @@ def InitRegister(level):
     CONF.dns_servers = []
     CONF.dns_sub = []
     CONF.level = level
-    CONF.levels = {"1": "", "2": "", "3": ""}
     CONF.proxies = []
     CONF.process_num = PROCESS_NUM
     CONF.quiet = False
     CONF.user_agents = []
     CONF.PROXY = True if PROXY else False
+    CONF.STATUS = STATUS
     logger.info("[AWIScan] Configuration has been initialized")
     TARGETS.IP = []
     TARGETS.DOMAIN = []
+    TARGETS.subDomain = []
     TARGETS.URL = []
     TARGETS.END.ip = []
     TARGETS.END.domain = []

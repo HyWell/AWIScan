@@ -10,7 +10,7 @@
 
 import aiodns
 
-from lib.core.setting import CONF
+from lib.core.setting import CONF, TARGETS
 
 
 async def subDomainBrute(current_target):
@@ -18,12 +18,11 @@ async def subDomainBrute(current_target):
     resolver = aiodns.DNSResolver(nameservers=CONF.dns_servers)
     try:
         answers = await resolver.query(current_target, "A")
+        TARGETS.END.domain.append(current_target)
         for answer in answers:
             address = answer.host
-            if address in ['1.1.1.1', '127.0.0.1', '0.0.0.0', '0.0.0.1']:
-                return [0, current_target, None]
-            else:
+            if address not in ['1.1.1.1', '127.0.0.1', '0.0.0.0', '0.0.0.1']:
                 ips.append(address)
-        return [1, current_target, ips]
+        return [current_target, ips]
     except aiodns.error.DNSError:
-        return [0, current_target, None]
+        TARGETS.ERROR.domain.append(current_target)

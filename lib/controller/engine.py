@@ -25,28 +25,27 @@ from lib.parse.result import resultParse, save
 
 async def scan(task_queue):
     while True:
+        # e.x [flag, ip, domain, url, current_target]
         target = await task_queue.get()
         flag = target[0]
-        current_target = target[1]
+        current_target = target[4] if target[4] else target[2]
         results = []
         try:
             if flag == 1:
                 results = await portScan(current_target)
+                TARGETS.END.ip.append(current_target)
             elif flag == 2 and CONF.dns_servers:
                 results = await subDomainBrute(current_target)
             elif flag == 3:
                 results = await dirBrute(current_target)
         except Exception as e:
             errmsg = traceback.format_exc()
-            if "NmapError" in errmsg:
-                TARGETS.ERROR.ip.append(current_target)
-            else:
-                logger.error("[AWIscan] It's errmsg:%s" % errmsg)
-            logger.warning("[AWIScan] %s look like failed " % current_target)
+            logger.error("[AWIscan] It's errmsg:%s" % errmsg)
         finally:
-            logger.info('[AWIScan] Async working IP: %d/%d Domain: %d/%d URL: %d/%d' % (
-                len(TARGETS.END.ip), len(TARGETS.IP), len(TARGETS.END.domain), len(TARGETS.DOMAIN),
-                len(TARGETS.END.url), len(TARGETS.URL)))
+            logger.info("[AWIScan] Total ip: %d/%d subDomain: %d/%d url: %d/%d" % (
+                len(TARGETS.END.ip), len(TARGETS.IP), len(TARGETS.END.domain) + len(TARGETS.ERROR.domain),
+                len(TARGETS.subDomain) + len(TARGETS.DOMAIN), len(TARGETS.END.url) + len(TARGETS.ERROR.url),
+                len(TARGETS.URL)))
             if results:
                 # Parse the result, put it into the work queue.
                 resultParse(task_queue, target, results)
@@ -55,17 +54,13 @@ async def scan(task_queue):
 
 async def control(base_targets):
     targets_queue = asyncio.Queue()
-    # ip:[1, ip] domain:[2, domain] subDomain: [2, subDomain, domain] url_dir: [3, url_dir, url]
     for target in TargetRegister(base_targets):
         targets_queue.put_nowait(target)
     if targets_queue.qsize() == 0:
         logger.warning("[AWIScan] No targets found. Please load targets with [-i|-f] or verify target num")
         sys.exit()
     else:
-        logger.info("[AWIScan] Target loading completed. Total %d targets" % (
-                len(TARGETS.IP) + len(TARGETS.DOMAIN) + len(TARGETS.URL)))
-
-    CONF.base_nums = targets_queue.qsize()
+        logger.info("[AWIScan] Target loading completed. Total %d targets" % (len(TARGETS.IP)))
 
     logger.info("[AWIScan] Set the tasks of async_nums: %d" % CONF.async_num)
     tasks = []
@@ -88,7 +83,7 @@ def webEngine():
         for proxy in open(PROXIES).readlines():
             proxy = proxy.strip()
             CONF.proxies.append(proxy)
-    logger.info("[AWIScan] Dir loading completed. Total %d dir" % len(CONF.dir))
+    logger.info("[AWIScan] Dir data loading completed. Total %d dir" % len(CONF.dir))
 
 
 async def test_server(server):
@@ -100,7 +95,7 @@ async def test_server(server):
         else:
             try:
                 await resolver.query('test.bad.dns.iassas.com', "A")
-                with open('output/AWIScan/bad_dns_servers.txt', 'a') as f:
+                with open('output/AWIScan/bad_dns_servers.txt', 'a+') as f:
                     f.write(server + '\n')
                 logger.warning("[AWIScan] Bad DNS Server found %s" % server)
             except aiodns.error.DNSError as e:
@@ -147,4 +142,3 @@ def run(base_targets):
     initEngine()
 
     asyncio.run(control(base_targets))
-

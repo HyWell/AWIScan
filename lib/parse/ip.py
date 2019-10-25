@@ -17,7 +17,7 @@ from urllib.parse import urlparse
 
 
 def url2ip(url):
-    ip = ''
+    ip = None
     try:
         handel_url = urlparse(url).hostname
         ip = socket.gethostbyname(handel_url)
@@ -54,7 +54,7 @@ def genIP(ip_range):
 
 def parseTarget(target):
     lists = []
-    ipv4_re = re.compile(r'[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
+    ipv4_re = re.compile(r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}")
     ipv4withmask_re = re.compile("^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|["
                                  "1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1["
                                  "0-9][0-9]|[1-9]?[0-9])/(3[0-2]|[1-2]?[0-9])$")
@@ -63,12 +63,21 @@ def parseTarget(target):
                               "0-9][0-9]|[1-9]?[0-9])-(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4]["
                               "0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25["
                               "0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$")
+    ipv4xrange_re = re.compile(r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\-[0-9]{1,3}")
+    ipv3_re = re.compile(r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.")
     try:
         parsed_url = urlparse(target)
         if parsed_url.scheme == "http" or parsed_url.scheme == "https":
-            # e.x http://10.1.1.1 https://10.1.1.1
-            url2ip(target)
-            target = {"ip": None, "domain": None, "url": "%s://%s" % (parsed_url.scheme, parsed_url.netloc)}
+            # e.x http://10.1.1.1 or https://10.1.1.1
+            if ipv4_re.search(target):
+                target = {"ip": parsed_url.hostname, "domain": None, "url": target}
+            else:
+                ip = url2ip(target)
+                if ip:
+                    target = {"ip": ip, "domain": parsed_url.hostname,
+                              "url": "%s://%s" % (parsed_url.scheme, parsed_url.netloc)}
+                else:
+                    target = {"ip": None, "domain": None, "url": None}
             lists.append(target)
         else:
             if ipv4withmask_re.search(parsed_url.path):
@@ -83,13 +92,29 @@ def parseTarget(target):
                 for ip in ips:
                     target = {"ip": ip, "domain": None, "url": None}
                     lists.append(target)
+            elif ipv4xrange_re.search(target):
+                # e.x 10.1.1.1-254
+                ipv3 = ipv3_re.search(target).group()
+                ip_end = target[target.find("-") + 1:]
+                lists.append({"ip": ipv3 + ip_end, "domain": None, "url": None})
+                for i in range(0, int(ip_end)):
+                    lists.append({"ip": ipv3 + str(i), "domain": None, "url": None})
+                logger.info("target")
             else:
                 if ipv4_re.search(target):
                     # e.x 10.1.1.1
                     target = {"ip": target, "domain": None, "url": None}
                     lists.append(target)
                 else:
-                    target = {"ip": None, "domain": target, "url": None}
+                    ip = url2ip("http://" + target)
+                    if ip:
+                        target = {"ip": ip, "domain": target, "url": None}
+                    else:
+                        ip = url2ip("https://" + target)
+                        if ip:
+                            target = {"ip": ip, "domain": target, "url": None}
+                        else:
+                            target = {"ip": None, "domain": None, "url": None}
                     lists.append(target)
     except Exception as e:
         logger.error(e)
